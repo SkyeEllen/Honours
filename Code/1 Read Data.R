@@ -101,4 +101,5 @@ conversion <- read.csv(here("RNA Splicing Data", "Tissue to Cell Sys.csv"))
 map <- data.frame(RNA = rownames(tissue_df), Tissue = conversion$Tissue.Name, Map = conversion$Cell.System)
 table(map$Map)
 
+# Overlap between tissue and cells
 length(Cell_source[Cell_source %in% paste0(conversion$Cell.System, " Cell System")])
