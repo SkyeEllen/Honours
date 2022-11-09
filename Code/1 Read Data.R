@@ -2,7 +2,6 @@
 here::i_am("Code/1 Read Data.R")
 library(here)
 
-
 ################################################################################
 # Cell Data
 ################################################################################
@@ -83,23 +82,24 @@ rm(A3SS, A5SS, MXE, RI, SE, data, data_full, data_mat, pNA)
 ################################################################################
 # Match with Biological source
 ################################################################################
-# Source for cell data
+# Source for all data
 bio_source <- read.csv(here("RNA Splicing Data", "RNASeq_Atlas_samples.csv"))
-match <- paste0("X", bio_source$RNA_number)
-Cell_source <- bio_source$Biological_source[match %in% rownames(cell_df)]
-table(Cell_source) # 2 - 17 obs per system
+bio_source$RNA_number_id <- paste0("X", bio_source$RNA_number)
+
+bio_source_keep <- bio_source %>% select(RNA_number_id, Biological_source)
+saveRDS(bio_source_keep, here("RNA Splicing Data", "Bio_source_all.RDS"))
+
+# Source for cell data
+cell_source_df <- data.frame(RNA_number_id = rownames(cell_df))
+cell_source_df <- left_join(cell_source_df,
+                            bio_source %>% select(RNA_number_id, Biological_source))
+saveRDS(cell_source_df, here("RNA Splicing Data", "Cell source.RDS"))
 
 # Source for tissue data
-Tissue_source <-  bio_source$Biological_source[match %in% rownames(tissue_df)]
-table(Tissue_source)
-
-Cell_System_Types <- unique(Cell_source)
-Tissue_System_Types <- unique(Tissue_source) # all unique
-
-# Conversion from Tissue type to Cell system (to compare clustering)
+tissue_source_df <- data.frame(RNA_number_id = rownames(tissue_df))
+tissue_source_df <- left_join(tissue_source_df,
+                              bio_source %>% select(RNA_number_id, Biological_source))
 conversion <- read.csv(here("RNA Splicing Data", "Tissue to Cell Sys.csv"))
-map <- data.frame(RNA = rownames(tissue_df), Tissue = conversion$Tissue.Name, Map = conversion$Cell.System)
-table(map$Map)
-
-# Overlap between tissue and cells
-length(Cell_source[Cell_source %in% paste0(conversion$Cell.System, " Cell System")])
+tissue_source_df <- left_join(tissue_source_df,
+                              conversion %>% select(Biological_source, Cell_system))
+saveRDS(tissue_source_df, here("RNA Splicing Data", "Tissue source.RDS"))
