@@ -241,6 +241,3 @@ simulate_data_3 <- function(n_groups, I_min, I_max){
 
   return(list(df = dataset, D = D, O = O, d = d))
 }
-
-sim <- simulate_data_3(30, 10, 10)
-plot_actual(sim)

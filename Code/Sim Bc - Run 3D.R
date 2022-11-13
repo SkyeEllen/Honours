@@ -52,6 +52,8 @@ simulation3 <- simulate_data_3(30, 10, 10)
 plot_actual(simulation3, 1)
 saveRDS(simulation3, here("Simulation Results", "sim3_small_dataset_3D.RDS"))
 # Only 2D version
+
+simulation3 <- readRDS(here("Simulation Results", "sim3_small_dataset_3D.RDS"))
 df <- simulation3$df; p <- dim(df)[2] - 1
 
 # Set parameters as per their paper, adjust nu/psi to wishart as opposed to gamma #
@@ -76,6 +78,15 @@ saveRDS(sim3_res2, here("Simulation Results", "sim3_res2_3D.RDS"))
 plot_results(df, sim3_res2)
 rm(sim3_res2)
 
+
+sim3_res3 <- run_mcmc(df, p,
+                      burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
+                      alpha = alpha, beta = beta, S_init = 5, r_init = 4,
+                      nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
+                      file_pre = "/Simulation Results/", file_post = "_sim3_res3_3D")
+saveRDS(sim3_res3, here("Simulation Results", "sim3_res3_3D.RDS"))
+plot_results(df, sim3_res3)
+rm(sim3_res3)
 ####### FROM SIMULATION 2.R ##########
 # Only 2D version
 df <- simulation2$df; p <- dim(df)[2] - 1
@@ -133,6 +144,15 @@ sim3_res2 <- run_mcmc(df, p,
                       nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
                       file_pre = "/Simulation Results/", file_post = "_sim3_res2_3D_v2")
 saveRDS(sim3_res2, here("Simulation Results", "sim3_res2_3D_v2.RDS"))
+plot_results(df, sim3_res2)
+rm(sim3_res2)
+
+sim3_res2 <- run_mcmc(df, p,
+                      burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
+                      alpha = alpha, beta = beta, S_init = 5, r_init = 4,
+                      nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
+                      file_pre = "/Simulation Results/", file_post = "_sim3_res3_3D_v2")
+saveRDS(sim3_res2, here("Simulation Results", "sim3_res3_3D_v2.RDS"))
 plot_results(df, sim3_res2)
 rm(sim3_res2)
 

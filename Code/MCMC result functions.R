@@ -12,6 +12,32 @@ plot_results <- function(dataset, res){
   plot.df <- as.data.frame(dataset[,2:(p + 1)])
   colnames(plot.df) <- paste("X", 1:p, sep = "")
 
+  facet_labs <- factor(seq(1:max(res$sj_obs)), levels = seq(1:max(res$sj_obs)), ordered = T)
+  names(facet_labs) <- paste("Population Cluster", facet_labs)
+  S_j <- res$Sj
+  sj_obs <- res$sj_obs
+  rij <- res$rij
+
+  plot.df$sj_obs = factor(sj_obs, levels = sort(unique(sj_obs)), ordered = T,
+                          labels = c(paste("Population Cluster", sort(unique(sj_obs)))))
+  p <- ggplot(data = plot.df, aes(x = X1, y = X2,
+                                  color = factor(rij))) +
+    facet_wrap(~sj_obs) + geom_point() + labs(color = "Observational\n Cluster",
+                                                x = "", y = "") +
+    theme(legend.title = element_text(size = 8),
+          strip.text.x = element_text(size = 8))
+
+  return(p)
+}
+
+################################################################################
+# Create a 2D plot coloured based on point estimate
+################################################################################
+plot_point_estimate <- function(dataset, res){
+  p <- dim(dataset)[2] - 1
+  plot.df <- as.data.frame(dataset[,2:(p + 1)])
+  colnames(plot.df) <- paste("X", 1:p, sep = "")
+
   facet_labs <- factor(seq(1:max(res$sj_obs)))
   names(facet_labs) <- paste("Population Cluster", facet_labs)
   S_j <- res$Sj
@@ -21,7 +47,10 @@ plot_results <- function(dataset, res){
   plot.df$sj_obs = factor(sj_obs, levels = seq(1:max(sj_obs)),
                           labels = c(paste("Population Cluster", seq(1:max(sj_obs)))))
   p <- ggplot(data = plot.df, aes(x = X1, y = X2, color = factor(rij))) +
-    facet_wrap(sj_obs ~.) + geom_point() + labs(color = "Observational\n Cluster")
+    facet_wrap(sj_obs ~.) + geom_point() + labs(color = "Observational\n Cluster",
+                                                x = "", y = "") +
+    theme(legend.title = element_text(size = 8),
+          strip.text.x = element_text(size = 8))
 
   return(p)
 }
@@ -95,23 +124,71 @@ map_res <- function(change_from, change_to, res){
   return(res_mapped)
 }
 
+map_vec <- function(change_from, change_to, vec){
+  mapped_vec <- vec;
+  for(i in 1:length(change_from)) {
+    mapped_vec[vec == change_from[i]] = change_to[i]
+  }
+  return(mapped_vec)
+}
+
+label_switch <- function(res_original, level, sim){
+  res_new <- res_original
+  if(level == "pop"){
+    #browser()
+    mu <- rep(0, length(unique(res_new$Sj)))
+    for(i in 1:max(res_new$Sj)){
+      mu[i] <- mean(sim$df[res_new$sj_obs == i, 2])
+    }
+    #browser()
+    change_from <- order(mu)
+    change_to <-seq(1,max(res_new$Sj));
+    res_new$Sj <- map_vec(change_from, change_to, res_new$Sj)
+    res_new$sj_obs <- rep(res_new$Sj, each = 10)
+  }
+
+  if(level == "obs"){
+    #browser()
+    for(i in 1:max(res_new$Sj)){
+      mu <- rep(0, length(unique(res_new$rij[res_new$sj_obs == i])))
+      for(j in 1:max(res_new$rij[res_new$sj_obs == i])){
+        mu[[j]] <- mean(sim$df[res_new$sj_obs == i & res_new$rij == j, 2])
+      }
+      #browser()
+      change_from <- order(mu)
+      change_to <- seq(1,max(res_new$rij[res_new$sj_obs == i]));
+      res_new$rij[res_new$sj_obs == i] <- map_vec(change_from, change_to, res_new$rij[res_new$sj_obs == i])
+    }
+  }
+  return(res_new)
+}
+
 ################################################################################
 # Accuracy counts
 ################################################################################
-confusion_matrix <- function(simulation, co_clustering_matrix, cutoff, type){
+confusion_matrix2 <- function(sim, co_clustering_matrix, epsilon, verbose = F){
+  # Determine which vectors to use
+  if(dim(co_clustering_matrix)[1] == length(sim$D)) type = "dist"
+  else type = "obs"
+
+  # Setup
   tp = fp = fn = tn = 0
+  clusters <- cutree(hclust(as.dist(1 - co_clustering_matrix)),
+                     h = 1 - epsilon)
+
+  # For Distributional clusters
   if(type == "dist"){
     J <- length(sim$D)
     for(i in 1:(J-1)){
       for(j in (i + 1):J){
         # True Positive
-        if(sim$D[i] == sim$D[j] & co_clustering_matrix[i,j] >= cutoff){ tp <- tp + 1}
+        if(sim$D[i] == sim$D[j] & clusters[i] == clusters[j]){ tp <- tp + 1}
         # False Positive
-        if(sim$D[i] != sim$D[j] & co_clustering_matrix[i,j] > cutoff){ fp <- fp + 1}
+        if(sim$D[i] != sim$D[j] & clusters[i] == clusters[j]){ fp <- fp + 1}
         # False Negative
-        if(sim$D[i] == sim$D[j] & co_clustering_matrix[i,j] < cutoff){ fn <- fn + 1}
+        if(sim$D[i] == sim$D[j] & clusters[i] != clusters[j]){ fn <- fn + 1}
         # True Negative
-        if(sim$D[i] != sim$D[j] & co_clustering_matrix[i,j] <= cutoff){ tn <- tn + 1}
+        if(sim$D[i] != sim$D[j] & clusters[i] != clusters[j]){ tn <- tn + 1}
       }
     }
   }
@@ -121,27 +198,27 @@ confusion_matrix <- function(simulation, co_clustering_matrix, cutoff, type){
     for(i in 1:(n-1)){
       for(j in (i + 1):n){
         # True Positive
-        if(sim$d[i] == sim$d[j] & sim$O[i] == sim$O[j] & co_clustering_matrix[i,j] >= cutoff){
+        if(sim$d[i] == sim$d[j] & sim$O[i] == sim$O[j] & clusters[i] == clusters[j]){
           tp <- tp + 1}
         # False Positive
-        if(((sim$d[i] != sim$d[j]) | (sim$O[i] == sim$O[j])) & (co_clustering_matrix[i,j] > cutoff)){
-          fp <- fp + 1}
+        if(((sim$d[i] != sim$d[j]) | (sim$O[i] != sim$O[j])) & clusters[i] == clusters[j]){
+          fp <- fp + 1
+        }
         # False Negative
-        if(sim$d[i] == sim$d[j] & sim$O[i] == sim$O[j] & co_clustering_matrix[i,j] < cutoff){
-          fn <- fn + 1}
+        if(sim$d[i] == sim$d[j] & sim$O[i] == sim$O[j] & clusters[i] != clusters[j]){
+          fn <- fn + 1
+        }
         # True Negative
-        if(((sim$d[i] != sim$d[j]) | (sim$O[i] == sim$O[j])) & (co_clustering_matrix[i,j] <= cutoff)){
+        if(((sim$d[i] != sim$d[j]) | (sim$O[i] != sim$O[j])) & clusters[i] != clusters[j]){
           tn <- tn + 1}
       }
     }
   }
-  cat("TP: ", tp,
-      "FP: ", fp,
-      "FN: ", fn,
-      "TN: ", tn)
+  if(verbose == T) cat("TP: ", tp, "FP: ", fp, "FN: ", fn, "TN: ", tn, "\n")
   confusion_matrix <- matrix(c(tp, fn, fp, tn), 2, 2)
   return(confusion_matrix)
 }
+
 
 true_clusters <- function(sim, type = "obs"){
   if(type == "obs"){
@@ -195,15 +272,34 @@ create_post_cc_heatmaps <- function(hm_df, idx, title){
           panel.grid.minor = element_blank(),
           panel.border = element_blank(),
           panel.background = element_blank(),
+          legend.position = "none",
           axis.text.y = element_blank()) +
     scale_fill_gradient(low = "#ffffff", high = "#000000") +
-    labs(title = "", subtitle = "Posterior clusters", fill = "Co-clustering\n  probability",)
-
-  # Plot distributional level groups
-
+    labs(title = "", subtitle = "Posterior Co-clustering Probability", fill = "Co-clustering\n  probability",)
 
   return(gridExtra::grid.arrange(p1, p2, ncol = 2))
 }
 
+roc_curve2 <- function(sim, cc_mat, title = ""){
+  sens_list <- c()
+  spec_list <- c()
+  for(c in seq(0, 1.1, by = 0.01)){
+    cm <-  confusion_matrix2(sim, cc_mat, c, verbose = F)
+    sens_list <- c(sens_list,cm[1,1]/sum(cm[,1]))
+    spec_list <- c(spec_list, cm[2,2]/sum(cm[,2]))
+  }
+
+  cat("1 - 1: ", seq(0, 1.1, by = 0.01)[which(sens_list == 1 & spec_list == 1)])
+  cat("0.8 - 0.8: ",seq(0, 1.1, by = 0.01)[which(sens_list > 0.8 & spec_list > 0.8)])
+
+  plot(c(0,1), c(0,1), type = "l",
+       main = title,
+       ylab = "Sensitivity",
+       xlab = "1 - Specificity", col = "red")
+  lines(x = 1 - spec_list, y = sens_list, lty = 1)
+  legend("bottomright", legend = c("Random Classifier",
+                                   "mNDP Posterior Co-clustering"), lty = c(2, 1), col = c("red",
+                                                                                           "black"))
+}
 
 

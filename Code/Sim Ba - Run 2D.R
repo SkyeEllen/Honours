@@ -48,6 +48,17 @@ saveRDS(sim1_res3, here("Simulation Results", "sim1_res3.RDS"))
 plot_results(df, sim1_res3)
 rm(sim1_res3)
 
+sim1_res4 <- run_mcmc(df, p,
+                      burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
+                      alpha = alpha, beta = beta, S_init = 2, r_init = 4,
+                      nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
+                      file_pre = "/Simulation Results/", file_post = "_sim1_res4")
+saveRDS(sim1_res4, here("Simulation Results", "sim1_res4.RDS"))
+plot_results(df, sim1_res4)
+rm(sim1_res4)
+
+
+
 ####### FROM SIMULATION 2.R ##########
 # Create small dataset (same distributions, size to fit smaller dataset closer to cell datast)
 simulation2 <- simulate_data_2(30, 10, 10)

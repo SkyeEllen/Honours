@@ -1,6 +1,7 @@
-# Application of the DPMM to both datasets & visualisations/analysis of results
+# Application of the mNDP to both datasets & visualisations/analysis of results
 here::i_am("Code/4 Multivariate mNDP.R")
 library(here)
+library(tidyverse)
 source(here("Code", "Multivariate mNDP Functions.R"))
 source(here("Code", "MCMC result functions.R"))
 
@@ -13,24 +14,23 @@ tissue_source <-  readRDS(here("RNA Splicing Data", "Tissue source.RDS"))
 
 # Set up df for mNDP
 cell_source$Bio_source_num <- as.numeric(as.factor(cell_source$Biological_source))
-cell_df <- left_join(cell_source %>% select(RNA_number_id, Bio_source_num),
+cell_df <- left_join(cell_source,
                      data.frame(cell_umap, RNA_number_id = rownames(cell_umap)))
-cell_df$RNA_number_id <- NULL
-rownames(cell_df) <- cell_source$RNA_number_id
+rownames(cell_df) <- cell_df$RNA_number_id
+cell_df$RNA_number_id <- NULL; cell_df$Biological_source <- NULL;
 cell_df <- cell_df[order(cell_df$Bio_source_num),]
 saveRDS(cell_df, here("RNA Splicing Data", "cell group df.RDS"))
 
 # Set up tissue df for mNDP
 tissue_source$Cell_sys_num <- as.numeric(as.factor(tissue_source$Cell_system))
-tissue_df <- left_join(tissue_source %>% select(RNA_number_id, Cell_sys_num),
+tissue_df <- left_join(tissue_source,
                        data.frame(tissue_umap, RNA_number_id = rownames(tissue_umap)))
 rownames(tissue_df) <- tissue_df$RNA_number_id
-tissue_df$RNA_number_id <- NULL
+tissue_df$RNA_number_id <- NULL; tissue_df$Biological_source <- NULL; tissue_df$Cell_system <- NULL
 tissue_df <- tissue_df[!(tissue_df$Cell_sys_num %in% which(table(tissue_df$Cell_sys_num) == 1)),]
 tissue_df$Cell_sys_num <- exclude.empty(tissue_df$Cell_sys_num)
 tissue_df <- tissue_df[order(tissue_df$Cell_sys_num),]
 saveRDS(tissue_df, here("RNA Splicing Data", "tissue group df.RDS"))
-
 
 ####### cell df ##########
 df <- as.matrix(cell_df); p <- dim(df)[2] - 1
@@ -161,3 +161,33 @@ gridExtra::grid.arrange(p1,p2, p3)
 
 
 ggplot(df, aes(x = X1, y = X2, color = factor(Cell_sys_num)))
+
+
+
+####### modify alpha beta ##########
+df <- as.matrix(cell_df); p <- dim(df)[2] - 1
+
+# Set parameters as per their paper, adjust nu/psi to wishart as opposed to gamma #
+alpha = 0.5; beta = 0.3; burn_in = 1000; mcmc_iter = 1000; jumps = 5;
+nu = 6; Psi = diag(1,p); lambda = 0.01; mu = rep(0, p)
+
+cell_res1 <- run_mcmc(df, p,
+                      burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
+                      alpha = alpha, beta = beta, S_init = 1, r_init = 1,
+                      nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
+                      file_pre = "/mNDP Results/", file_post = "_cell_res1_v3")
+saveRDS(cell_res1, here("mNDP Results", "cell_res1_v3.RDS"))
+plot_results(df, cell_res1)
+rm(cell_res1)
+
+# Set parameters as per their paper, adjust nu/psi to wishart as opposed to gamma #
+alpha = 0.5; beta = 1; burn_in = 100; mcmc_iter = 100; jumps = 5;
+nu = 10; Psi = diag(1,p); lambda = 10; mu = rep(0, p)
+
+cell_res1 <- run_mcmc(df, p,
+                      burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
+                      alpha = alpha, beta = beta, S_init = 1, r_init = 1,
+                      nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
+                      file_pre = "/mNDP Results/", file_post = "_cell_res1_v4")
+saveRDS(cell_res1, here("mNDP Results", "cell_res1_v4.RDS"))
+plot_results(df, cell_res1)

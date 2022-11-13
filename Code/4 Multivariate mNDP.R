@@ -1,4 +1,4 @@
-# Application of the DPMM to both datasets & visualisations/analysis of results
+# Application of the mNDP to both datasets & visualisations/analysis of results
 here::i_am("Code/4 Multivariate mNDP.R")
 library(here)
 library(tidyverse)
@@ -24,7 +24,7 @@ saveRDS(cell_df, here("RNA Splicing Data", "cell group df.RDS"))
 # Set up tissue df for mNDP
 tissue_source$Cell_sys_num <- as.numeric(as.factor(tissue_source$Cell_system))
 tissue_df <- left_join(tissue_source,
-                     data.frame(tissue_umap, RNA_number_id = rownames(tissue_umap)))
+                       data.frame(tissue_umap, RNA_number_id = rownames(tissue_umap)))
 rownames(tissue_df) <- tissue_df$RNA_number_id
 tissue_df$RNA_number_id <- NULL; tissue_df$Biological_source <- NULL; tissue_df$Cell_system <- NULL
 tissue_df <- tissue_df[!(tissue_df$Cell_sys_num %in% which(table(tissue_df$Cell_sys_num) == 1)),]
@@ -33,68 +33,32 @@ tissue_df <- tissue_df[order(tissue_df$Cell_sys_num),]
 saveRDS(tissue_df, here("RNA Splicing Data", "tissue group df.RDS"))
 
 
-####### cell df ##########
-df <- as.matrix(cell_df); p <- dim(df)[2] - 1
-
+####### Run All ##########
+cell_df <- as.matrix(cell_df); cell_p <- dim(cell_df)[2] - 1
+tissue_df <- as.matrix(tissue_df); tissue_p <- dim(tissue_df)[2]-1
 # Set parameters as per their paper, adjust nu/psi to wishart as opposed to gamma #
-alpha = 0.5; beta = 1; burn_in = 2000; mcmc_iter = 1600; jumps = 5;
-nu = p + 1; Psi = diag(10,p); lambda = 0.01; mu = rep(0, p)
+alpha = 0.5; beta = 1; burn_in = 2500; mcmc_iter = 2000; jumps = 5;
 
-cell_res1 <- run_mcmc(df, p,
-                      burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
-                      alpha = alpha, beta = beta, S_init = 1, r_init = 1,
-                      nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
-                      file_pre = "/mNDP Results/", file_post = "_cell_res1")
-saveRDS(cell_res1, here("mNDP Results", "cell_res1.RDS"))
-rm(cell_res1)
+S_init <- c(1, 3, 5, 7, 9); r_init <- c(1, 4, 2, 3, 1)
 
-cell_res2 <- run_mcmc(df, p,
-                      burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
-                      alpha = alpha, beta = beta, S_init = 12, r_init = 2,
-                      nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
-                      file_pre = "/mNDP Results/", file_post = "_cell_res2")
-saveRDS(cell_res2, here("mNDP Results", "cell_res2.RDS"))
-rm(cell_res2)
+for(i in 1:5){
+  nu = 6; Psi = diag(10,cell_p); lambda = 0.01; mu = rep(0, cell_p)
+  res <- run_mcmc(cell_df, cell_p,
+                  burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
+                  alpha = alpha, beta = beta, S_init = S_init[i], r_init = r_init[i],
+                  nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
+                  file_pre = "/mNDP New Results/", file_post = paste("_cell_res", i, sep = ""))
+  saveRDS(res, here("mNDP New Results", paste("cell_res", i, ".RDS", sep = "")))
 
-cell_res3 <- run_mcmc(df, p,
-                      burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
-                      alpha = alpha, beta = beta, S_init = 5, r_init = 3,
-                      nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
-                      file_pre = "/mNDP Results/", file_post = "_cell_res3")
-saveRDS(cell_res3, here("mNDP Results", "cell_res3.RDS"))
-rm(cell_res3)
+  nu = 6; Psi = diag(10,tissue_p); lambda = 0.01; mu = rep(0, tissue_p)
+  res <- run_mcmc(cell_df, tissue_p,
+                  burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
+                  alpha = alpha, beta = beta, S_init = S_init[i], r_init = r_init[i],
+                  nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
+                  file_pre = "/mNDP New Results/", file_post = paste("_tissue_res", i, sep = ""))
+  saveRDS(res, here("mNDP New Results", paste("tissue_res", i, ".RDS", sep = "")))
+}
 
-####### Tissue Dataset ##########
-df <- as.matrix(tissue_df); p <- dim(df)[2] - 1
-# remove groups with fewer than 2 observations
-
-# Set parameters as per their paper, adjust nu/psi to wishart as opposed to gamma #
-alpha = 0.5; beta = 1; burn_in = 2000; mcmc_iter = 1600; jumps = 5;
-nu = p + 1; Psi = diag(10,p); lambda = 0.01; mu = rep(0, p)
-
-tissue_res1 <- run_mcmc(df, p,
-                      burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
-                      alpha = alpha, beta = beta, S_init = 1, r_init = 1,
-                      nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,debug = F,
-                      file_pre = "/mNDP Results/", file_post = "_tissue_res1")
-saveRDS(tissue_res1, here("mNDP Results", "tissue_res1.RDS"))
-rm(tissue_res1)
-
-tissue_res2 <- run_mcmc(df, p,
-                      burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
-                      alpha = alpha, beta = beta, S_init = 12, r_init = 2,
-                      nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
-                      file_pre = "/mNDP Results/", file_post = "_tissue_res2")
-saveRDS(tissue_res2, here("mNDP Results", "tissue_res2.RDS"))
-rm(tissue_res2)
-
-tissue_res3 <- run_mcmc(df, p,
-                        burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
-                        alpha = alpha, beta = beta, S_init = 5, r_init = 3,
-                        nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
-                        file_pre = "/mNDP Results/", file_post = "_tissue_res3")
-saveRDS(tissue_res3, here("mNDP Results", "tissue_res3.RDS"))
-rm(tissue_res3)
 
 # ######### Results Cell df#########
 # # Cell
