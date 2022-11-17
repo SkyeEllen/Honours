@@ -1,3 +1,4 @@
+library(coda)
 ###### Results #######
 simulation1 <- readRDS(here("Simulation New Results", "SD1.RDS"))
 simulation2 <- readRDS(here("Simulation New Results", "SD2.RDS"))
@@ -19,16 +20,16 @@ names(titles) <- apply(expand.grid(a = sim_names, b = chain_names), 1, FUN = "pa
 epsilon = 0.1
 
 # Pick which simulation
-sim_name <- "sim1"; chain_name <- ""; chain_ext = "_"
-sim <- simulation1; df <- sim$df
-
+sim_name <- "sim3_tiny"; chain_name <- "_modhyp"; chain_ext = "_modhyp"
+sim <- simulation2; df <- sim$df
+max_res <- 1
 # Get results
 res <- list();
-for(i in 1:5)
+for(i in 1:max_res)
   res[[i]] <- readRDS(here("Simulation New Results", paste(sim_name, "_res", i, chain_name, ".RDS", sep = "")))
 
 # Adjust based on long or not
-burn_in = 2500; mcmc_iter = 2000; jumps = 5;
+burn_in = 1000; mcmc_iter = 1000; jumps = 5;
 
 # Convergence test
 end = burn_in + mcmc_iter*jumps; start = burn_in + 1; idx = seq(start, end, 5)
@@ -37,6 +38,7 @@ for(i in 1:max_res) {mcmc_list[[i]] <- mcmc(res[[i]]$total_l_p[idx])}
 gelman.diag(mcmc_list)
 
 # Plot of chains
+min <- min(unlist(lapply(res, function(x){min(x$total_l_p)})))
 col_list <- RColorBrewer::brewer.pal(5, "Set2")
 plot(res[[1]]$total_l_p, col = col_list[1], type = "l", ylim = c(min, 0),
      ylab = expression("log p(x | s, y, "*theta*")"),
@@ -134,3 +136,36 @@ heatmap(table(clusters_h, paste(sim$d, sim$O)), scale = "col")
 cluster_k <- cutree(h, k = length(unique(paste(sim$d, sim$O))))
 table(cluster_k, paste(sim$d, sim$O))
 heatmap(table(cluster_k, paste(sim$d, sim$O)), scale = "none")
+
+######## Accuracy from chains ############
+# Define helper functions
+lconfPop <- function(res, sim){return(confusion_matrix2(sim, clusters = res$Sj))}
+lconfObs <- function(res, sim){return(confusion_matrix2(sim, clusters = paste(res$sj_obs, res$rij)))}
+lmcr <- function(cm, J){return(sum(cm[1,2], cm[2,1])/(J*(J - 1)/2))}
+lsens <- function(cm){return(cm[1,1]/sum(cm[,1]))}
+lspec <- function(cm){return(cm[2,2]/sum(cm[,2]))}
+
+max_res <- 5
+for(i in 1:3){
+  sim_name <- sim_opts[i]; sim = list(simulation1, simulation2, simulation3)[[i]]
+
+  # Get results
+  res <- list();
+  for(j in 1:max_res)
+    res[[j]] <- readRDS(here("Simulation New Results", paste(sim_name, "_res", j, chain_name, ".RDS", sep = "")))
+
+  J <- length(res[[1]]$Sj)
+  n <-  length(res[[1]]$sj_obs)
+
+  cm <- lapply(res, lconfPop, sim =sim)
+  pop_mcr <- round(mean(unlist(lapply(cm, lmcr, J = J))),3)
+  pop_sens <- round(mean(unlist(lapply(cm, lsens))),3)
+  pop_spec <- round(mean(unlist(lapply(cm, lspec))),3)
+
+  cm <- lapply(res, lconfObs, sim =sim)
+  obs_mcr <- round(mean(unlist(lapply(cm, lmcr, J = n))),3)
+  obs_sens <- round(mean(unlist(lapply(cm, lsens))),3)
+  obs_spec <- round(mean(unlist(lapply(cm, lspec))),3)
+
+  cat(i, " & ", pop_mcr, " & ", pop_sens, " & ", pop_spec, " & ", obs_mcr, " & ", obs_sens, " & ", obs_spec, "\\\\\n" )
+}

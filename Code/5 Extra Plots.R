@@ -91,3 +91,109 @@ for(u in names(table(cell_df$Biological_source))){
   latex_str <- paste(latex_str, "\\", sep = "")
 }
 
+######## Table with number of observations in each system ########
+######## Combine levels
+library(tidyr)
+tissue_df <- readRDS(here("RNA Splicing Data", "Tissue group df.RDS"))
+tissue_comb_clust <- data.frame(RNA_number_id = rownames(tissue_df))
+tissue_comb_clust$obs <- tissue_obs_clust_df$posterior_clusters
+tissue_comb_clust <- left_join(tissue_comb_clust, tissue_source)
+
+tissue_comb_clust <- left_join(tissue_comb_clust,
+                               data.frame(Cell_system = tissue_dist_clust_df$System,
+                                          Pop_clust = tissue_dist_clust_df$posterior_clusters))
+tissue_comb_clust <- left_join(tissue_comb_clust,
+                               data.frame(RNA_number_id = rownames(tissue_df),
+                                          X1 = tissue_df$X1,
+                                          X2 = tissue_df$X2))
+
+for(i in 1:max(tissue_comb_clust$Pop_clust)){
+  tissue_comb_clust$obs[tissue_comb_clust$Pop_clust == i] = exclude.empty(tissue_comb_clust$obs[tissue_comb_clust$Pop_clust == i])
+}
+
+ggplot(tissue_comb_clust, aes(x = X1, y = X2, col = factor(obs))) + geom_point() +
+  facet_wrap(.~Pop_clust)
+
+
+clust <- paste(tissue_comb_clust$Pop_clust, tissue_comb_clust$obs)
+for(i in unique(tissue_comb_clust$Pop_clust)){
+  for(j in unique(tissue_comb_clust$obs)){
+    cat(paste(unique(tissue_comb_clust$Cell_system[tissue_comb_clust$Pop_clust == i
+                                                   & tissue_comb_clust$obs == j]), collapse = ", "), "\n")
+  }
+}
+
+
+library(tidyr)
+cell_df <- readRDS(here("RNA Splicing Data", "Cell group df.RDS"))
+cell_comb_clust <- data.frame(RNA_number_id = rownames(cell_df))
+cell_comb_clust$obs <- cell_obs_clust_df$posterior_clusters
+cell_comb_clust <- left_join(cell_comb_clust, cell_source)
+cell_comb_clust$Biological_source <- str_sub(cell_comb_clust$Biological_source, end = -13)
+cell_comb_clust <- left_join(cell_comb_clust,
+                             data.frame(Biological_source = cell_dist_clust_df$System,
+                                        Pop_clust = cell_dist_clust_df$posterior_clusters))
+cell_comb_clust <- left_join(cell_comb_clust,
+                             data.frame(RNA_number_id = rownames(cell_df),
+                                        X1 = cell_df$X1,
+                                        X2 = cell_df$X2))
+
+for(i in 1:max(cell_comb_clust$Pop_clust)){
+  cell_comb_clust$obs[cell_comb_clust$Pop_clust == i] = exclude.empty(cell_comb_clust$obs[cell_comb_clust$Pop_clust == i])
+}
+
+ggplot(cell_comb_clust, aes(x = X1, y = X2, col = factor(obs))) + geom_point() +
+  facet_wrap(.~Pop_clust) +
+  geom_point(data = cell_comb_clust[cell_comb_clust$Biological_source == "Mesenchymal Stem",],
+             mapping = aes(x = X1, y = X2, col = factor(obs)), col = "black")
+
+
+clust <- paste(cell_comb_clust$Pop_clust, cell_comb_clust$obs)
+for(i in unique(cell_comb_clust$Pop_clust)){
+  for(j in unique(cell_comb_clust$obs)){
+    cat(i, " & ", j , "&" , paste(unique(cell_comb_clust$Biological_source[cell_comb_clust$Pop_clust == i
+                                                       & cell_comb_clust$obs == j]), collapse = ", "), "\\\\\n")
+  }
+}
+
+
+write.csv(tissue_comb_clust, here("New For Collaborator", "Final Tissue Clusters.csv"))
+write.csv(cell_comb_clust, here("New For Collaborator", "Final Cell Clusters.csv"))
+
+for(i in 1:max(cell_comb_clust$Pop_clust)){
+  sub_groups <- cell_dist_clust_df$System[cell_dist_clust_df$posterior_clusters == i]
+  idx <- which(str_sub(cell_obs_clust_df$Biological_source, end = -13) %in% sub_groups)
+  if(length(sub_groups) > 1){
+    h_sub <- hclust(as.dist(1 - cell_obsCCM[idx, idx]))
+    plot(h_sub)
+    cell_comb_clust$obs[cell_comb_clust$Pop_clust == i] = cutree(h_sub, h = 1 - 0.1)}
+  else{
+    cell_comb_clust$obs[cell_comb_clust$Pop_clust == i] = 1}
+
+}
+
+ggplot(cell_comb_clust, aes(x = X1, y = X2, col = factor(obs))) + geom_point() +
+  facet_wrap(.~Pop_clust)
+
+
+for(i in 1:max(tissue_comb_clust$Pop_clust)){
+  sub_groups <- tissue_dist_clust_df$System[tissue_dist_clust_df$posterior_clusters == i]
+  idx <- which(tissue_obs_clust_df$Cell_system %in% sub_groups)
+  h_sub <- hclust(as.dist(1 - tissue_obsCCM[idx, idx]))
+  plot(h_sub)
+  tissue_comb_clust$obs[tissue_comb_clust$Pop_clust == i] = cutree(h_sub, h = 1 - 0.2)
+}
+
+ggplot(tissue_comb_clust, aes(x = X1, y = X2, col = factor(obs))) + geom_point() +
+  facet_wrap(.~Pop_clust)
+
+
+clust <- paste(tissue_comb_clust$Pop_clust, tissue_comb_clust$obs)
+for(i in unique(tissue_comb_clust$Pop_clust)){
+  for(j in unique(tissue_comb_clust$obs)){
+    cat(paste(unique(tissue_comb_clust$Cell_system[tissue_comb_clust$Pop_clust == i
+                                                   & tissue_comb_clust$obs == j]), collapse = ", "), "\n")
+  }
+}
+
+

@@ -37,92 +37,87 @@ saveRDS(tissue_df, here("RNA Splicing Data", "tissue group df.RDS"))
 cell_df <- as.matrix(cell_df); cell_p <- dim(cell_df)[2] - 1
 tissue_df <- as.matrix(tissue_df); tissue_p <- dim(tissue_df)[2]-1
 # Set parameters as per their paper, adjust nu/psi to wishart as opposed to gamma #
-alpha = 0.5; beta = 1; burn_in = 2500; mcmc_iter = 2000; jumps = 5;
+alpha = 0.5; beta = 1; burn_in = 2000; mcmc_iter = 1000; jumps = 5;
 
 S_init <- c(1, 3, 5, 7, 9); r_init <- c(1, 4, 2, 3, 1)
 
 for(i in 1:5){
-  nu = 6; Psi = diag(10,cell_p); lambda = 0.01; mu = rep(0, cell_p)
+  nu = 6; Psi = diag(1,cell_p); lambda = 0.01; mu = rep(0, cell_p)
   res <- run_mcmc(cell_df, cell_p,
                   burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
                   alpha = alpha, beta = beta, S_init = S_init[i], r_init = r_init[i],
                   nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
-                  file_pre = "/mNDP New Results/", file_post = paste("_cell_res", i, sep = ""))
-  saveRDS(res, here("mNDP New Results", paste("cell_res", i, ".RDS", sep = "")))
+                  file_pre = "/mNDP New Results 2/", file_post = paste("_cell_res", i, sep = ""))
+  saveRDS(res, here("mNDP New Results 2", paste("cell_res", i, ".RDS", sep = "")))
 
-  nu = 6; Psi = diag(10,tissue_p); lambda = 0.01; mu = rep(0, tissue_p)
-  res <- run_mcmc(cell_df, tissue_p,
+  nu = 6; Psi = diag(1,tissue_p); lambda = 0.01; mu = rep(0, tissue_p)
+  res <- run_mcmc(tissue_df, tissue_p,
                   burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
                   alpha = alpha, beta = beta, S_init = S_init[i], r_init = r_init[i],
                   nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
-                  file_pre = "/mNDP New Results/", file_post = paste("_tissue_res", i, sep = ""))
-  saveRDS(res, here("mNDP New Results", paste("tissue_res", i, ".RDS", sep = "")))
+                  file_pre = "/mNDP New Results 2/", file_post = paste("_tissue_res", i, sep = ""))
+  saveRDS(res, here("mNDP New Results 2", paste("tissue_res", i, ".RDS", sep = "")))
 }
 
 
 # ######### Results Cell df#########
 # # Cell
 df <- readRDS(here("RNA Splicing Data", "cell group df.RDS"))
-res1 <- readRDS(here("mNDP Results", "cell_res1.RDS"))
-res2 <- readRDS(here("mNDP Results", "cell_res2.RDS"))
-res3 <- readRDS(here("mNDP Results", "cell_res3.RDS"))
+res <- list(); for(i in 1:max_res){res[[i]] <- readRDS(here("mNDP New Results", paste("cell_res", i, ".RDS", sep = ""))) }
+mcmc_list <- list(); idx <- seq(burn_in + 1, length(res[[1]]$total_l_p))
+for(i in 1:max_res) {mcmc_list[[i]] <- mcmc(res[[i]]$total_l_p[idx])}
+gelman.diag(mcmc_list, autoburnin = F)
 
-# Gelman diagnostic
-library(coda)
-mcmc.res1 <- mcmc(data= res1$total_l_p, thin = 5)
-mcmc.res2 <- mcmc(data= res2$total_l_p, thin = 5)
-mcmc.res3 <- mcmc(data= res3$total_l_p, thin = 5)
-
-mcmc_list <- list(mcmc.res1, mcmc.res2, mcmc.res3)
-
-gelman.diag(mcmc_list, confidence = 0.95, transform=TRUE, autoburnin=TRUE,
-            multivariate=FALSE)
-#
-p1 <- plot_results(df, res1)
-p2 <- plot_results(df, res2)
-p3 <- plot_results(df, res3)
-gridExtra::grid.arrange(p1,p2, p3)
-#
+plots <- list(); for(i in 1:max_res) plots[[i]] <- plot_results(df, res[[i]])
+gridExtra::grid.arrange(grobs = plots)
+# All only have one observational cluster
 
 # Log prob plot
-idx <- seq(0,length(res1$total_l_p), by = 5)
-ylim <- c(min(c(res1$total_l_p[idx], res2$total_l_p[idx],res3$total_l_p[idx])),
-          max(c(res1$total_l_p[idx], res2$total_l_p[idx],res3$total_l_p[idx])))
-plot(res2$total_l_p[idx], ylim = ylim, type = "l", col = "red")
-lines(res1$total_l_p[idx], col = "blue")
-lines(res3$total_l_p[idx], col = "green")
-abline(v = burn_in/5)
+idx <- seq(0,length(res[[i]]$total_l_p), by = 5)
+min <- 0; for(i in 1:max_res) min <- min(min, res[[i]]$total_l_p)
+max <- min; for(i in 1:max_res) max <- max(max, res[[i]]$total_l_p)
+cols <- RColorBrewer::brewer.pal(5, "Set2")
+plot(res[[1]]$total_l_p[idx], ylim = c(min, max), type = "l", col = cols[1])
+for(i in 2:max_res) lines(res[[i]]$total_l_p[idx], col = cols[i])
+abline(v = burn_in/5, lty = 3)
 
-# Total K - already doesn't include burn_in
-ylim <- c(min(c(res1$total_K, res2$total_K,res3$total_K)),
-          max(c(res1$total_K, res2$total_K,res3$total_K)))
-plot(res2$total_K, ylim = ylim, type = "l", col = "red")
-lines(res1$total_K, col = "blue")
-lines(res3$total_K, col = "green")
+# Total K
+min <- 0; for(i in 1:max_res) min <- min(min, res[[i]]$total_K)
+max <- min; for(i in 1:max_res) max <- max(max, res[[i]]$total_K)
+cols <- RColorBrewer::brewer.pal(5, "Set2")
+plot(res[[1]]$total_K[idx], ylim = c(min, max), type = "l", col = cols[1])
+for(i in 2:max_res) lines(res[[i]]$total_K[idx], col = cols[i])
+abline(v = burn_in/5, lty = 3)
+
 
 # ######### Results Tissue #########
+# # Cell
 df <- readRDS(here("RNA Splicing Data", "tissue group df.RDS"))
-res1 <- readRDS(here("mNDP Results", "tissue_res1.RDS"))
-res2 <- readRDS(here("mNDP Results", "tissue_res2.RDS"))
-res3 <- readRDS(here("mNDP Results", "tissue_res3.RDS"))
+res <- list(); for(i in 1:max_res){res[[i]] <- readRDS(here("mNDP New Results", paste("tissue_res", i, ".RDS", sep = ""))) }
+mcmc_list <- list(); idx <- seq(burn_in + 1, length(res[[1]]$total_l_p))
+for(i in 1:max_res) {mcmc_list[[i]] <- mcmc(res[[i]]$total_l_p[idx])}
+gelman.diag(mcmc_list, autoburnin = F)
 
-# # Gelman diagnostic
-library(coda)
-mcmc.res1 <- mcmc(data= res1$total_l_p, thin = 5)
-mcmc.res2 <- mcmc(data= res2$total_l_p, thin = 5)
-mcmc.res3 <- mcmc(data= res3$total_l_p, thin = 5)
+plots <- list(); for(i in 1:max_res) plots[[i]] <- plot_results(df, res[[i]])
+gridExtra::grid.arrange(grobs = plots)
+# All only have one observational cluster
 
-mcmc_list <- list(mcmc.res1, mcmc.res2, mcmc.res3)
+# Log prob plot
+idx <- seq(0,length(res[[i]]$total_l_p), by = 5)
+min <- 0; for(i in 1:max_res) min <- min(min, res[[i]]$total_l_p)
+max <- min; for(i in 1:max_res) max <- max(max, res[[i]]$total_l_p)
+cols <- RColorBrewer::brewer.pal(5, "Set2")
+plot(res[[1]]$total_l_p[idx], ylim = c(min, max), type = "l", col = cols[1])
+for(i in 2:max_res) lines(res[[i]]$total_l_p[idx], col = cols[i])
+abline(v = burn_in/5, lty = 3)
 
-gelman.diag(mcmc_list, confidence = 0.95, transform=TRUE, autoburnin=TRUE,
-            multivariate=FALSE)
-
-
-p1 <- plot_results(df, res1)
-p2 <- plot_results(df, res2)
-p3 <- plot_results(df, res3)
-
-gridExtra::grid.arrange(p1,p2, p3)
+# Total K
+min <- 0; for(i in 1:max_res) min <- min(min, res[[i]]$total_K)
+max <- min; for(i in 1:max_res) max <- max(max, res[[i]]$total_K)
+cols <- RColorBrewer::brewer.pal(5, "Set2")
+plot(res[[1]]$total_K[idx], ylim = c(min, max), type = "l", col = cols[1])
+for(i in 2:max_res) lines(res[[i]]$total_K[idx], col = cols[i])
+abline(v = burn_in/5, lty = 3)
 
 
 

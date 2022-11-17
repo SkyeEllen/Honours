@@ -3,19 +3,19 @@
 ################################################################################
 # Libraries
 here::i_am("Code/2 Dimensionality Reduction.R")
-library(here)       # Locate files relative to this one
-library(umap)       # Calculate UMAP embeddings
-library(ggplot2)    # Visualisation of UMAP embeddings / heatmaps
-library(progress)   # Progress bar for creating umap plots
-library(ggrepel)    # Label any outliers
-library(patchwork)  # Plot umap options to pdf in a grid
-library(GGally)     # Facet plot
-library(tidyverse)  # Data manipulation stuff
-library(clValid)    # Dunn's index (choose # clusters)
-library(cluster)    # Silhouette index
-library(dendextend) # Changing dendrogram aesthetics
+library(here)         # Locate files relative to this one
+library(umap)         # Calculate UMAP embeddings
+library(ggplot2)      # Visualisation of UMAP embeddings / heatmaps
+library(progress)     # Progress bar for creating umap plots
+library(patchwork)    # Plot umap options to pdf in a grid
+library(GGally)       # Pairwise plots
+library(tidyverse)    # Data manipulation stuff
+library(dendextend)   # Changing dendrogram aesthetics
+library(RColorBrewer) # Colors
 
+# My additional functions for plotting
 source(here("Code", "DR and EA Functions.R"))
+
 # Read in Data
 cell_df <- readRDS(here("RNA Splicing Data", "Cell Data.RDS"))
 tissue_df <- readRDS(here("RNA Splicing Data", "Tissue Data.RDS"))
@@ -123,11 +123,9 @@ tissue_umap <- create_umap_single(tissue_df, 35, 0.001, 3, 1046)
 ggpairs(data.frame(tissue_umap$layout, "clust" = ch_tissue), columns = 1:3, aes(color = factor(clust)),
         upper = list(continuous = "blank"), diag = list(continuous = "blankDiag"))
 
-
-
-
+# Check separation in 3D plot
 library(rgl)
 plot3d(x = tissue_umap$layout[,1], y = tissue_umap$layout[,2], z = tissue_umap$layout[,3], col = ch_tissue)
 
-
+# Save results
 saveRDS(tissue_umap$layout, here("RNA Splicing Data", "Tissue UMAP.RDS"))

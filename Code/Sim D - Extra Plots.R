@@ -70,7 +70,7 @@ dist_cc_mat3 <- coclusteringMatrix(sj_c3) + diag(J)
 dist_sens_list1 <- c();dist_sens_list2 <- c();dist_sens_list3 <- c();
 dist_spec_list1 <- c();dist_spec_list2 <- c();dist_spec_list3 <- c();
 mcr1 <- c(); mcr2 <- c(); mcr3 <- c();
-for(c in seq(0, 1.1, by = 0.01)){
+for(c in seq(0, 1.01, by = 0.01)){
   # Simulation 1
   cm <-  confusion_matrix2(simulation1, dist_cc_mat1, c, verbose = F)
   dist_sens_list1 <- c(dist_sens_list1,cm[1,1]/sum(cm[,1]))
@@ -89,30 +89,31 @@ for(c in seq(0, 1.1, by = 0.01)){
   dist_spec_list3 <- c(dist_spec_list3, cm[2,2]/sum(cm[,2]))
   mcr3 <- c(mcr3, 1/(J*(J -1)/2)*sum(cm[1,2],cm[2,1]))
 }
-par(mfrow = c(1,1))
+par(mfrow = c(1,2))
 cols <- RColorBrewer::brewer.pal(3, "Dark2")
 plot(c(0,1), c(0,1), type = "l",
-     main = "Population Level ROC Curves",
+     #main = "Population Level ROC Curves",
      ylab = "Sensitivity",
      xlab = "1 - Specificity", col = "black", lty = 3)
-lines(x = 1 - dist_spec_list1, y = dist_sens_list1, lty = 2, col = cols[1])
-lines(x = 1 - dist_spec_list2, y = dist_sens_list2, lty = 2, col = cols[2])
-lines(x = 1 - dist_spec_list3, y = dist_sens_list3, lty = 2, col = cols[3])
+lines(x = 1 - dist_spec_list1, y = dist_sens_list1, lty = 1, col = cols[1])
+lines(x = 1 - dist_spec_list2, y = dist_sens_list2, lty = 1, col = cols[2])
+lines(x = 1 - dist_spec_list3, y = dist_sens_list3, lty = 1, col = cols[3])
+legend("bottomright", legend = c("RC", "SD1", "SD2", 'SD3'), lty = c(3,1,1,1), col = c("black",cols))
 
-seq(0, 1.1, by = 0.01)[which(dist_spec_list1 == 1 & dist_spec_list1 == 1)]
-seq(0, 1.1, by = 0.01)[which(dist_spec_list2 == 1 & dist_sens_list2 == 1)]
-seq(0, 1.1, by = 0.01)[which(dist_spec_list3 == 1 & dist_spec_list3 == 1)]
+seq(0, 1.01, by = 0.01)[which(dist_spec_list1 == 1 & dist_spec_list1 == 1)]
+seq(0, 1.01, by = 0.01)[which(dist_spec_list2 == 1 & dist_sens_list2 == 1)]
+seq(0, 1.01, by = 0.01)[which(dist_spec_list3 == 1 & dist_spec_list3 == 1)]
 
 ######## Comparison of Epsilons ########
 cols <- RColorBrewer::brewer.pal(3, "Dark2")
-plot(seq(0, 1.1, by = 0.01), mcr1, type = "l",
+plot(seq(0, 1.01, by = 0.01), mcr1, type = "l",
      #main = "Effect of Epsilon on Misclassification",
      ylab = "Misclassification Rate",
      xlab = "Epsilon", lty = 1, col = cols[1])
-lines(seq(0, 1.1, by = 0.01), mcr2, col = cols[2])
-lines(seq(0, 1.1, by = 0.01), mcr3, col = cols[3])
+lines(seq(0, 1.01, by = 0.01), mcr2, col = cols[2])
+lines(seq(0, 1.01, by = 0.01), mcr3, col = cols[3])
 legend("topright", legend = c("SD1", "SD2", 'SD3'), lty = 1, col = cols)
-optimal <- seq(0, 1.1, by = 0.01)[which.min(mcr1 + mcr2 + mcr3)] #0.08
+optimal <- seq(0, 1.01, by = 0.01)[which.min(mcr1 + mcr2 + mcr3)] #0.08
 abline(v = optimal, lty = 3)
 
 
@@ -147,7 +148,7 @@ obs_cc_mat3 <- coclusteringMatrix(combined3) + diag(n)
 obs_sens_list1 <- c();obs_sens_list2 <- c();obs_sens_list3 <- c();
 obs_spec_list1 <- c();obs_spec_list2 <- c();obs_spec_list3 <- c();
 obs_mcr1 <- c();obs_mcr2 <- c();obs_mcr3 <- c();
-for(c in seq(0, 1.1, by = 0.01)){
+for(c in seq(0, 1.01, by = 0.01)){
   # Simulation 1
   cm <-  confusion_matrix2(simulation1, obs_cc_mat1, c, verbose = F)
   obs_sens_list1 <- c(obs_sens_list1,cm[1,1]/sum(cm[,1]))
@@ -177,50 +178,50 @@ lines(x = 1 - obs_spec_list1, y = obs_sens_list1, lty = 1, col = cols[1])
 lines(x = 1 - obs_spec_list2, y = obs_sens_list2, lty = 1, col = cols[2])
 lines(x = 1 - obs_spec_list3, y = obs_sens_list3, lty = 1, col = cols[3])
 legend("bottomright",
-       legend = c("Random Classifier", "Simulation 1", "Simulation 2", "Simulation 3"),
+       legend = c("RC", "SD1", "SD2", "SD3"),
        lty = c(3,1,1,1), col = c("black", cols))
 
-seq(0, 1.1, by = 0.01)[which(obs_spec_list1 >0.9 & obs_sens_list1 >0.9)]
-seq(0, 1.1, by = 0.01)[which(obs_spec_list2 >0.9 & obs_sens_list2 >0.9)]
-seq(0, 1.1, by = 0.01)[which(obs_spec_list3 >0.9 & obs_sens_list3 >0.9)]
+seq(0, 1.01, by = 0.01)[which(obs_spec_list1 >0.9 & obs_sens_list1 >0.9)]
+seq(0, 1.01, by = 0.01)[which(obs_spec_list2 >0.9 & obs_sens_list2 >0.9)]
+seq(0, 1.01, by = 0.01)[which(obs_spec_list3 >0.9 & obs_sens_list3 >0.9)]
 
-seq(0, 1.1, by = 0.01)[which(obs_mcr1 < 0.05)]
-seq(0, 1.1, by = 0.01)[which(obs_mcr2 < 0.05)]
-seq(0, 1.1, by = 0.01)[which(obs_mcr3 < 0.1)]
+seq(0, 1.01, by = 0.01)[which(obs_mcr1 < 0.05)]
+seq(0, 1.01, by = 0.01)[which(obs_mcr2 < 0.05)]
+seq(0, 1.01, by = 0.01)[which(obs_mcr3 < 0.1)]
 
 
 
 ######## Comparison of Epsilons ########
 cols <- RColorBrewer::brewer.pal(3, "Dark2")
-plot(seq(0, 1.1, by = 0.01), obs_mcr1, type = "l",
+plot(seq(0, 1.01, by = 0.01), obs_mcr1, type = "l",
      #main = "Effect of Epsilon on Misclassification",
      ylab = "Misclassification Rate",
      xlab = "Epsilon", lty = 1, col = cols[1])
-lines(seq(0, 1.1, by = 0.01), obs_mcr2, col = cols[2])
-lines(seq(0, 1.1, by = 0.01), obs_mcr3, col = cols[3])
+lines(seq(0, 1.01, by = 0.01), obs_mcr2, col = cols[2])
+lines(seq(0, 1.01, by = 0.01), obs_mcr3, col = cols[3])
 legend("topright", legend = c("SD1", "SD2", 'SD3'), lty = 1, col = cols)
-optimal <- seq(0, 1.1, by = 0.01)[which.min(obs_mcr1 + obs_mcr2 + obs_mcr3)]
+optimal <- seq(0, 1.01, by = 0.01)[which.min(obs_mcr1 + obs_mcr2 + obs_mcr3)]
 abline(v = optimal, lty = 3)
 
-plot(seq(0, 1.1, by = 0.01), dist_spec_list1, type = "l",
+plot(seq(0, 1.01, by = 0.01), dist_spec_list1, type = "l",
      main = "Effect of Epsilon on Sensitivity and Specificity",
      sub = "Population Level",
      ylab = "",
      xlab = "Epsilon", lty = 1, col = cols[1])
-lines(seq(0, 1.1, by = 0.01), obs_spec_list2, col = cols[2])
-lines(seq(0, 1.1, by = 0.01), obs_spec_list3, col = cols[3])
-lines(seq(0, 1.1, by = 0.01), obs_sens_list1, col = cols[1], lty = 2)
-lines(seq(0, 1.1, by = 0.01), obs_sens_list2, col = cols[2], lty = 2)
-lines(seq(0, 1.1, by = 0.01), obs_sens_list3, col = cols[3], lty = 2)
+lines(seq(0, 1.01, by = 0.01), obs_spec_list2, col = cols[2])
+lines(seq(0, 1.01, by = 0.01), obs_spec_list3, col = cols[3])
+lines(seq(0, 1.01, by = 0.01), obs_sens_list1, col = cols[1], lty = 2)
+lines(seq(0, 1.01, by = 0.01), obs_sens_list2, col = cols[2], lty = 2)
+lines(seq(0, 1.01, by = 0.01), obs_sens_list3, col = cols[3], lty = 2)
 legend(x = 0.7, y = 0.6, legend = c("Sensitivity", "Specificity"), lty = c(1,2))
 legend(x = 0.7, y = 0.4, legend = c("Simulation 1", "Simulation 2", "Simulation 3"), lty = 1, col = cols)
 abline(v = 0.05)
 
-seq(0, 1.1, by = 0.01)[which.max((obs_spec_list1 + obs_sens_list1)/2 +
+seq(0, 1.01, by = 0.01)[which.max((obs_spec_list1 + obs_sens_list1)/2 +
                                    (obs_sens_list2 + obs_spec_list2)/2 +
                                    (obs_spec_list3 +obs_sens_list3)/2)]
 # 0.05
-seq(0, 1.1, by = 0.01)[which.min(obs_mcr1 + obs_mcr2 + obs_mcr3)]
+seq(0, 1.01, by = 0.01)[which.min(obs_mcr1 + obs_mcr2 + obs_mcr3)]
 # 0.05
 ######### Heatmaps - Population #########
 # Simulation 1
@@ -332,43 +333,49 @@ for(i in 1:5)
 
 true <- res[[1]]; true$Sj <- simulation1$D; true$sj_obs <- simulation1$d; true$rij <- simulation1$O
 point_est <- res[[1]]
-point_est$Sj <- cutree(hclust(as.dist(1 - dist_cc_mat1)), h = 1 - epsilon)
+point_est$Sj <- cutree(hclust(as.dist(1 - dist_cc_mat1)), h = 1 - epsilon_dist)
 point_est$sj_obs <- rep(point_est$Sj, each = 10)
-point_est$rij <- cutree(hclust(as.dist(1 - obs_cc_mat1)), h = 1 - epsilon)
+point_est$rij <- cutree(hclust(as.dist(1 - obs_cc_mat1)), h = 1 - epsilon_obs)
 for(i in 1:max(point_est$Sj)) {
   point_est$rij[point_est$sj_obs == i] <- exclude.empty(point_est$rij[point_est$sj_obs == i])
 }
 plot_results(simulation1$df, true) + plot_results(simulation1$df, point_est)
+true_ordered <- label_switch2(label_switch2(true, "pop", simulation1), "obs", simulation1)
+point_ordered <- label_switch2(label_switch2(point_est, "pop", simulation1), "obs", simulation1)
+
+plot_results(simulation1$df, true_ordered) + plot_results(simulation1$df, point_ordered)
 
 #Simulation 2
 epsilon_dist = 0.08; sim_name <- "sim2"
-epsilon_obs = 0.05;
+epsilon_obs = 0.1;
 # Get results
 res <- list();
 for(i in 1:5)
   res[[i]] <- readRDS(here("Simulation New Results", paste(sim_name, "_res", i, chain_name, ".RDS", sep = "")))
 true <- res[[1]]; true$Sj <- simulation1$D; true$sj_obs <- simulation1$d; true$rij <- simulation1$O
 
-plot_true_point_est <- function(sim, dist_cc, obs_cc, e_dist, e_obs, res){
+for(i in 1:max(point_est$Sj)) {
+  point_est$rij[point_est$sj_obs == i] <- exclude.empty(point_est$rij[point_est$sj_obs == i])
+}
+
+plot_true_point_est <- function(sim, dist_cc, obs_cc, e_dist = 0.08, e_obs = 0.05, res){
   # Setup true
   true <- res; true$Sj <- sim$D; true$sj_obs <- sim$d; true$rij <- sim$O
-  true_ordered <- label_switch(label_switch(true, "pop", sim), "obs", sim)
+  true_ordered <- label_switch2(label_switch2(true, "pop", sim), "obs", sim)
 
   # Calculate and setup point estimate
   point_est <- res
-  point_est$Sj <- cutree(hclust(as.dist(1 - dist_cc)), h = 1 - e_dist)
+  point_est$Sj <- cutree(hclust(as.dist(1 - dist_cc)), h = 1 - epsilon_dist)
   point_est$sj_obs <- rep(point_est$Sj, each = 10)
-  point_est$rij <- cutree(hclust(as.dist(1 - obs_cc)), h = 1 - e_obs)
+  point_est$rij <- cutree(hclust(as.dist(1 - obs_cc)), h = 1 - epsilon_obs)
   for(i in 1:max(point_est$Sj)) {
     point_est$rij[point_est$sj_obs == i] <- exclude.empty(point_est$rij[point_est$sj_obs == i])
   }
-  point_est_ordered <- label_switch(label_switch(point_est, "pop", sim), "obs", sim)
-
+  point_est_ordered <- label_switch2(label_switch2(point_est, "pop", sim), "obs", sim)
+  browser()
   # Plot
   plot_results(sim$df, true_ordered) + plot_results(sim$df, point_est_ordered)
 }
-
-
 
 plot_true_point_est(simulation3, dist_cc_mat3, obs_cc_mat3, epsilon_dist, epsilon_obs,
                     readRDS(here("Simulation New Results", paste("sim3", "_res", 1, chain_name, ".RDS", sep = ""))))
@@ -379,7 +386,7 @@ plot_true_point_est(simulation1, dist_cc_mat1, obs_cc_mat1, epsilon_dist, epsilo
 
 #Simulation 3
 epsilon_dist = 0.08; sim_name <- "sim3"
-epsilon_obs = 0.1;
+epsilon_obs = 0.05;
 # Get results
 res <- list();
 for(i in 1:5)
@@ -394,6 +401,35 @@ for(i in 1:max(point_est$Sj)) {
 }
 plot_results(simulation3$df, true) + plot_results(simulation3$df, point_est)
 
+
+######### AUC #########
+n <- length(dist_sens_list1)
+sens_diff <- dist_sens_list1[1:(n - 1)] + dist_sens_list1[2:n]
+spec_diff <- (1 - dist_spec_list1[1:(n - 1)]) - (1 - dist_spec_list1[2:n])
+auc_pop_1 <- sum(sens_diff * spec_diff/2)
+
+sens_diff <- dist_sens_list2[1:(n - 1)] + dist_sens_list2[2:n]
+spec_diff <- (1 - dist_spec_list2[1:(n - 1)]) - (1 - dist_spec_list2[2:n])
+auc_pop_2 <- sum(sens_diff * spec_diff/2)
+
+sens_diff <- dist_sens_list3[1:(n - 1)] + dist_sens_list3[2:n]
+spec_diff <- (1 - dist_spec_list3[1:(n - 1)]) - (1 - dist_spec_list3[2:n])
+auc_pop_3 <- sum(sens_diff * spec_diff/2)
+cat("AUC: ", auc_pop_1, " ", auc_pop_2, " ", auc_pop_3)
+
+n <- length(dist_sens_list1)
+sens_diff <- obs_sens_list1[1:(n - 1)] + obs_sens_list1[2:n]
+spec_diff <- (1 - obs_spec_list1[1:(n - 1)]) - (1 - obs_spec_list1[2:n])
+auc_obs_1 <- sum(sens_diff * spec_diff/2)
+
+sens_diff <- obs_sens_list2[1:(n - 1)] + obs_sens_list2[2:n]
+spec_diff <- (1 - obs_spec_list2[1:(n - 1)]) - (1 - obs_spec_list2[2:n])
+auc_obs_2 <- sum(sens_diff * spec_diff/2)
+
+sens_diff <- obs_sens_list3[1:(n - 1)] + obs_sens_list3[2:n]
+spec_diff <- (1 - obs_spec_list3[1:(n - 1)]) - (1 - obs_spec_list3[2:n])
+auc_obs_3 <- sum(sens_diff * spec_diff/2)
+cat("AUC: ", round(auc_obs_1,3), " ", round(auc_obs_2,3), " ", round(auc_obs_3,3))
 
 ######### True vs Chain Results #########
 plot_results(simulation3$df, true) + plot_results(simulation3$df, point_est)
