@@ -4,7 +4,8 @@ library(ggplot2) # Data manipulation and plotting
 library(dirichletprocess) # Run the DPMM
 library(coda)
 library(clusternomics)
-library(stringr)
+library(tidyverse)
+library(RColorBrewer)
 
 source(here("Code", "DR and EA Functions.R"))
 
@@ -59,8 +60,6 @@ ggsave(here("DPMM Results", "DPMM Cell clusters.png"), width = 18, height = 6)
 # Biological Source Heatmap
 cell_source <- readRDS(here("RNA Splicing Data", "Cell source.RDS"))
 cell_dpmm_plot_df <- left_join(cell_dpmm_plot_df, cell_source)
-p <- create_ggplot_heatmap(post_clust, cell_dpmm_plot_df$Biological_source)
-p
 
 cell_dpmm1$likelihoodChain1 = cell_dpmm1$likelihoodChain
 cell_dpmm2$likelihoodChain1 = cell_dpmm2$likelihoodChain
@@ -105,8 +104,8 @@ h <- hclust(as.dist(1-post_cc_cell))
 plot(h)
 clust <- cutree(h, h = 1 - 0.08)
 cell_hm <- create_ggplot_heatmap(clust, str_sub(cell_dpmm_plot_df$Biological_source, end = -13))
-cell_p <- plot_dirichletprocess_multivariate(cell_dpmm3) + theme_minimal() +
-  labs(x = "UMAP Embedding 1", y = "UMAP Embedding 2")
+cell_p <- plot_dirichletprocess_multivariate(cell_dpmm3) +
+  labs(x = "UMAP Embedding 1", y = "UMAP Embedding 2") + scale_color_brewer(palette = "Dark2")
 
 
 ################################################################################
@@ -114,11 +113,11 @@ cell_p <- plot_dirichletprocess_multivariate(cell_dpmm3) + theme_minimal() +
 ################################################################################
 tissue_umap <- readRDS(here("RNA Splicing Data", "Tissue UMAP.RDS"))
 tissue_dpmm <- DirichletProcessMvnormal(tissue_umap, numInitialClusters = 1)
-tissue_dpmm1 <- Fit(tissue_dpmm, 5000)
+tissue_dpmm1 <- Fit(tissue_dpmm, 10000)
 tissue_dpmm <- DirichletProcessMvnormal(tissue_umap, numInitialClusters = 5)
-tissue_dpmm2 <- Fit(tissue_dpmm, 5000)
+tissue_dpmm2 <- Fit(tissue_dpmm, 10000)
 tissue_dpmm <- DirichletProcessMvnormal(tissue_umap, numInitialClusters = 10)
-tissue_dpmm3 <- Fit(tissue_dpmm, 5000)
+tissue_dpmm3 <- Fit(tissue_dpmm, 10000)
 
 
 saveRDS(tissue_dpmm1, here("DPMM Results", "Tissue DPMM 1.RDS"))
@@ -157,15 +156,14 @@ tp3 <- ggplot(data.frame(tissue_plot_df),
 tp1 + tp2 + tp3
 ggsave(here("DPMM Results", "DPMM Tissue clusters.png"), width = 18, height = 6)
 
-
 gridExtra::grid.arrange(cp1, tp1, cp2, tp2, cp3, tp3, ncol = 2)
-#cp1 + tp1 + cp2 + tp2 + cp3 + tp3
 ggsave(here("DPMM Results", "DPMM All clusters.png"), width = 10, height = 15)
 
-tissue_p <- plot_dirichletprocess_multivariate(tissue_dpmm1) + theme_minimal() +
-  labs(x = "UMAP Embedding 1", y = "UMAP Embedding 2")
+tissue_p <- plot_dirichletprocess_multivariate(tissue_dpmm1) + #theme_minimal() +
+  labs(x = "UMAP Embedding 1", y = "UMAP Embedding 2") +
+  scale_color_brewer(palette = "Dark2")
 cell_p + tissue_p
-ggsave(here("Images", "DPMM Posterior Clusters.pdf"), width = 10, height = 5)
+ggsave(here("Images", "DPMM Posterior Clusters.pdf"), cell_p + tissue_p, width = 10, height = 5)
 
 plot(tissue_dpmm1$likelihoodChain, col = "red", type = "l")
 lines(tissue_dpmm2$likelihoodChain, col = "green")

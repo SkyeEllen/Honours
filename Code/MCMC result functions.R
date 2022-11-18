@@ -2,6 +2,7 @@
 library(tidyr)
 library(tidyverse)
 library(GGally)
+library(RColorBrewer)
 
 ################################################################################
 # Create a 2D plot coloured based on observational cluster &
@@ -17,15 +18,16 @@ plot_results <- function(dataset, res){
   S_j <- res$Sj
   sj_obs <- res$sj_obs
   rij <- res$rij
-
+  nc = ceiling(sqrt(max(sj_obs)))
   plot.df$sj_obs = factor(sj_obs, levels = sort(unique(sj_obs)), ordered = T,
                           labels = c(paste("Population Cluster", sort(unique(sj_obs)))))
   p <- ggplot(data = plot.df, aes(x = X1, y = X2,
                                   color = factor(rij))) +
-    facet_wrap(~sj_obs) + geom_point() + labs(color = "Observational\n Cluster",
+    facet_wrap(~sj_obs, ncol = nc, nrow = nc) + geom_point() + labs(color = "Observational\n Cluster",
                                                 x = "", y = "") +
     theme(legend.title = element_text(size = 8),
-          strip.text.x = element_text(size = 8))
+          strip.text.x = element_text(size = 8)) +
+    scale_color_brewer(palette = "Dark2")
 
   return(p)
 }
@@ -132,49 +134,48 @@ map_vec <- function(change_from, change_to, vec){
   return(mapped_vec)
 }
 
-label_switch <- function(res_original, level, sim){
-  res_new <- res_original
+label_switch2 <- function(res, level, sim){
+  new <- res
   if(level == "pop"){
-    #browser()
-    mu <- rep(0, length(unique(res_new$Sj)))
-    for(i in 1:max(res_new$Sj)){
-      mu[i] <- mean(sim$df[res_new$sj_obs == i, 2])
-    }
-    #browser()
-    change_from <- order(mu)
-    change_to <-seq(1,max(res_new$Sj));
-    res_new$Sj <- map_vec(change_from, change_to, res_new$Sj)
-    res_new$sj_obs <- rep(res_new$Sj, each = 10)
+    mu <- rep(0, max(new$Sj))
+    for(m in 1:max(new$Sj)) mu[m] <- mean(sim$df[new$sj_obs == m, 2])
+    cat(mu, "\n")
+    cat(rank(mu), "\n")
+    cat(order(mu), "\n")
+
+    new$Sj <- map_vec(1:max(new$Sj), rank(mu), new$Sj)
+    new$sj_obs <- rep(new$Sj, each = 10)
+    for(m in 1:max(new$Sj)) mu[m] <- mean(sim$df[new$sj_obs == m, 2])
+    cat(mu, "\n")
   }
 
   if(level == "obs"){
-    #browser()
-    for(i in 1:max(res_new$Sj)){
-      mu <- rep(0, length(unique(res_new$rij[res_new$sj_obs == i])))
-      for(j in 1:max(res_new$rij[res_new$sj_obs == i])){
-        mu[[j]] <- mean(sim$df[res_new$sj_obs == i & res_new$rij == j, 2])
-      }
-      #browser()
-      change_from <- order(mu)
-      change_to <- seq(1,max(res_new$rij[res_new$sj_obs == i]));
-      res_new$rij[res_new$sj_obs == i] <- map_vec(change_from, change_to, res_new$rij[res_new$sj_obs == i])
+    for(s in 1:max(new$Sj)){
+      mu <- rep(0, max(new$rij[new$sj_obs == s]))
+      for(m in 1:max(new$rij[new$sj_obs == s])) mu[m] <- mean(sim$df[new$sj_obs == s & new$rij == m, 2])
+      new$rij[new$sj_obs == s] <- map_vec(1:max(new$rij[new$sj_obs == s]), rank(mu), new$rij[new$sj_obs == s] )
     }
   }
-  return(res_new)
+  return(new)
 }
 
 ################################################################################
 # Accuracy counts
 ################################################################################
-confusion_matrix2 <- function(sim, co_clustering_matrix, epsilon, verbose = F){
-  # Determine which vectors to use
-  if(dim(co_clustering_matrix)[1] == length(sim$D)) type = "dist"
-  else type = "obs"
+confusion_matrix2 <- function(sim, co_clustering_matrix = NULL, epsilon = 0.01, verbose = F,
+                              clusters = NULL){
+  # Setup - base off provided cluster
+  type <- ifelse(is.null(clusters),
+                 ifelse(dim(co_clustering_matrix)[1] == length(sim$D), "dist", "obs"),
+                 ifelse(length(clusters) == length(sim$D), "dist", "obs"))
 
-  # Setup
+  # Setup - base off co-clustering matrix
   tp = fp = fn = tn = 0
-  clusters <- cutree(hclust(as.dist(1 - co_clustering_matrix)),
-                     h = 1 - epsilon)
+  if(is.null(clusters)){
+    if(is.null(co_clustering_matrix)) {
+      cat("Either cluster assignments or co_clustering_matrix must be provided.");
+      return()}
+    clusters <- cutree(hclust(as.dist(1 - co_clustering_matrix)), h = 1 - epsilon)}
 
   # For Distributional clusters
   if(type == "dist"){

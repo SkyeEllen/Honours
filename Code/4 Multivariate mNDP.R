@@ -5,6 +5,7 @@ library(tidyverse)
 source(here("Code", "Multivariate mNDP Functions.R"))
 source(here("Code", "MCMC result functions.R"))
 
+# Setup data frames
 cell_umap <- readRDS(here("RNA Splicing Data", "Cell UMAP.RDS"))
 tissue_umap <- readRDS(here("RNA Splicing Data", "Tissue UMAP.RDS"))
 bio_source_all <- readRDS(here("RNA Splicing Data", "Bio_source_all.RDS"))
@@ -34,8 +35,10 @@ saveRDS(tissue_df, here("RNA Splicing Data", "tissue group df.RDS"))
 
 
 ####### Run All ##########
+# Read Datasets (if above not run)
 cell_df <- as.matrix(cell_df); cell_p <- dim(cell_df)[2] - 1
 tissue_df <- as.matrix(tissue_df); tissue_p <- dim(tissue_df)[2]-1
+
 # Set parameters as per their paper, adjust nu/psi to wishart as opposed to gamma #
 alpha = 0.5; beta = 1; burn_in = 2000; mcmc_iter = 1000; jumps = 5;
 
@@ -47,21 +50,21 @@ for(i in 1:5){
                   burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
                   alpha = alpha, beta = beta, S_init = S_init[i], r_init = r_init[i],
                   nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
-                  file_pre = "/mNDP New Results 2/", file_post = paste("_cell_res", i, sep = ""))
-  saveRDS(res, here("mNDP New Results 2", paste("cell_res", i, ".RDS", sep = "")))
+                  file_pre = "/mNDP New Results/", file_post = paste("_cell_res", i, sep = ""))
+  saveRDS(res, here("mNDP New Results", paste("cell_res", i, ".RDS", sep = "")))
 
   nu = 6; Psi = diag(1,tissue_p); lambda = 0.01; mu = rep(0, tissue_p)
   res <- run_mcmc(tissue_df, tissue_p,
                   burn_in = burn_in, jumps = jumps, mcmc_iter = mcmc_iter,
                   alpha = alpha, beta = beta, S_init = S_init[i], r_init = r_init[i],
                   nu = nu, Psi = Psi, lambda = lambda, mu = mu, seed = NULL,
-                  file_pre = "/mNDP New Results 2/", file_post = paste("_tissue_res", i, sep = ""))
-  saveRDS(res, here("mNDP New Results 2", paste("tissue_res", i, ".RDS", sep = "")))
+                  file_pre = "/mNDP New Results ", file_post = paste("_tissue_res", i, sep = ""))
+  saveRDS(res, here("mNDP New Results", paste("tissue_res", i, ".RDS", sep = "")))
 }
 
 
 # ######### Results Cell df#########
-# # Cell
+max_res = 5; burn_in = 2500; mcmc_iter = 2000; jumps = 5;
 df <- readRDS(here("RNA Splicing Data", "cell group df.RDS"))
 res <- list(); for(i in 1:max_res){res[[i]] <- readRDS(here("mNDP New Results", paste("cell_res", i, ".RDS", sep = ""))) }
 mcmc_list <- list(); idx <- seq(burn_in + 1, length(res[[1]]$total_l_p))
@@ -77,8 +80,8 @@ idx <- seq(0,length(res[[i]]$total_l_p), by = 5)
 min <- 0; for(i in 1:max_res) min <- min(min, res[[i]]$total_l_p)
 max <- min; for(i in 1:max_res) max <- max(max, res[[i]]$total_l_p)
 cols <- RColorBrewer::brewer.pal(5, "Set2")
-plot(res[[1]]$total_l_p[idx], ylim = c(min, max), type = "l", col = cols[1])
-for(i in 2:max_res) lines(res[[i]]$total_l_p[idx], col = cols[i])
+plot(res[[1]]$total_l_p, ylim = c(min, max), type = "l", col = cols[1])
+for(i in 2:max_res) lines(res[[i]]$total_l_p, col = cols[i])
 abline(v = burn_in/5, lty = 3)
 
 # Total K
@@ -91,7 +94,6 @@ abline(v = burn_in/5, lty = 3)
 
 
 # ######### Results Tissue #########
-# # Cell
 df <- readRDS(here("RNA Splicing Data", "tissue group df.RDS"))
 res <- list(); for(i in 1:max_res){res[[i]] <- readRDS(here("mNDP New Results", paste("tissue_res", i, ".RDS", sep = ""))) }
 mcmc_list <- list(); idx <- seq(burn_in + 1, length(res[[1]]$total_l_p))

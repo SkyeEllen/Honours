@@ -78,12 +78,13 @@ plot(h_tissue, main = "Tissue dendrogram",
 saveRDS(h_tissue, here("RNA Splicing Data", "Tissue Hierarchical.RDS"))
 
 # Combine Tissue and Cell dendrograms (for inclusion in thesis)
-par(mfrow = c(1,2))
-h_tissue %>% as.dendrogram() %>% set("branches_k_color", k = 4) %>%
+par(mfrow = c(1,2), mar = c(1, 3, 3, 3))
+cols <- RColorBrewer::brewer.pal(4, "Set2")
+h_tissue %>% as.dendrogram() %>% set("branches_k_color", k = 4, value = cols) %>%
   set("labels", NA) %>%
   plot(ylab = "Height", main = "Tissue dendrogram")
 
-h %>% as.dendrogram() %>% set("branches_k_color", k = 4) %>%
+h %>% as.dendrogram() %>% set("branches_k_color", k = 4, value = cols) %>%
   set("labels", NA) %>%
   plot(ylab = "Height", main = "Cell dendrogram")
 
@@ -102,11 +103,11 @@ create_ggplot_heatmap(h_cluster_tissue_df$RNA_number_id, h_cluster_tissue_df$clu
 ################################################################################
 # Tissue - UMAP Reduction
 ################################################################################
+# Get list(s) of plots
 h_plots <- create_umap_plots(tissue_df, ch_tissue, 1046, 3)
-#k_plots <- create_umap_plots(tissue_df, tissue_kmeans$cluster, 5454, 3)
 
-plots <- h_plots[[1]]; plots2 <- h_plots[[2]]
 # Compare plots
+plots <- h_plots[[1]]; plots2 <- h_plots[[2]]
 split <- length(plots)/2
 
 pdf(here("DR Files", "Tissue UMAP plots h_1.pdf"), 20, 10)
@@ -119,6 +120,7 @@ patchwork::wrap_plots(plots2[1:split], nrow = 4, ncol = 4)
 patchwork::wrap_plots(plots2[(split + 1):length(plots2)], nrow = 4, ncol = 4)
 dev.off()
 
+# Use chosen value to get UMAP embedding
 tissue_umap <- create_umap_single(tissue_df, 35, 0.001, 3, 1046)
 ggpairs(data.frame(tissue_umap$layout, "clust" = ch_tissue), columns = 1:3, aes(color = factor(clust)),
         upper = list(continuous = "blank"), diag = list(continuous = "blankDiag"))

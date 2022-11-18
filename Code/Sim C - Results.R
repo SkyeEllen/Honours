@@ -1,4 +1,7 @@
+# Setup
 library(coda)
+source(here("Code", "MCMC result functions.R"))
+
 ###### Results #######
 simulation1 <- readRDS(here("Simulation New Results", "SD1.RDS"))
 simulation2 <- readRDS(here("Simulation New Results", "SD2.RDS"))
@@ -7,7 +10,7 @@ plot_actual(simulation1)
 plot_actual(simulation2)
 plot_actual(simulation3)
 
-# Setup stuff
+# Setup variables
 sim_opts <- c("sim1", "sim2", "sim3")
 sim_names <- c("Simulation 1", "Simulation 2", "Simulation 3")
 chain_opts <- c("", "_3D", "_3D_v2", "_long")
@@ -17,10 +20,10 @@ titles <- apply(expand.grid(a = sim_opts, b = chain_opts), 1, FUN = "paste", col
 names(titles) <- apply(expand.grid(a = sim_names, b = chain_names), 1, FUN = "paste", collapse = " ")
 
 # Cutoff for clusters
-epsilon = 0.1
+epsilon = 0.01
 
 # Pick which simulation
-sim_name <- "sim3_tiny"; chain_name <- "_modhyp"; chain_ext = "_modhyp"
+sim_name <- "sim2"; chain_name <- ""; chain_ext = ""
 sim <- simulation2; df <- sim$df
 max_res <- 1
 # Get results
@@ -29,7 +32,7 @@ for(i in 1:max_res)
   res[[i]] <- readRDS(here("Simulation New Results", paste(sim_name, "_res", i, chain_name, ".RDS", sep = "")))
 
 # Adjust based on long or not
-burn_in = 1000; mcmc_iter = 1000; jumps = 5;
+burn_in = 2500; mcmc_iter = 2000; jumps = 5;
 
 # Convergence test
 end = burn_in + mcmc_iter*jumps; start = burn_in + 1; idx = seq(start, end, 5)

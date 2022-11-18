@@ -1,7 +1,6 @@
 here::i_am("Code/5 Posterior Co-Clustering.R")
 library(here)
 library(clusternomics)
-library(stringr)
 library(tidyverse)
 library(dendextend)
 source(here("Code", "MCMC result functions.R"))
@@ -32,10 +31,10 @@ colnames(cell_distCCM) <- rownames(cell_distCCM) <- groups
 write.csv(cell_distCCM, file = here("New For Collaborator", "Cell Groups - Posterior Co-clustering probability matrix.csv"))
 
 h <- hclust(as.dist(1 - cell_distCCM))
-par(mfrow = c(1,2))
+#par(mfrow = c(1,2))
 plot(h, ylab = "", sub = "", main = "Cell System Level Dendrogram", xlab = "")
 order_idx <- order.hclust(h)
-#heatmap(cell_distCCM[order_idx, order_idx], scale = "none")
+
 
 dist_idx <- groups[order.hclust(h)]
 cell_dist_hm_df <- expand_grid(obs1 = groups, obs2 = groups)
